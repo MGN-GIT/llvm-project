@@ -16757,28 +16757,6 @@ static SDValue tryLowerToBSL(SDValue N, SelectionDAG &DAG) {
                            N0->getOperand(1 - i), N1->getOperand(1 - j));
     }
 
-  // Fold: or(and(xor(AArch64ISD::CMTST(X,M), allones), A),
-  // and(AArch64ISD::CMTST(X,M), B)) --> BSP(CMTST(X,M), A, B)
-  // This absorbs the NOT produced by performSETCCCombine when it folds
-  // setcc(and(X,Mask), 0, seteq) --> NOT(CMTST(X,Mask)).
-  for (int i = 1; i >= 0; --i)
-    for (int j = 1; j >= 0; --j) {
-      SDValue NotCMTST = N0->getOperand(i);
-      SDValue A = N0->getOperand(1 - i);
-      SDValue CMTST = N1->getOperand(j);
-      SDValue B = N1->getOperand(1 - j);
-
-      if (NotCMTST.getOpcode() != ISD::XOR ||
-          !ISD::isBuildVectorAllOnes(NotCMTST.getOperand(1).getNode()))
-        continue;
-      if (NotCMTST.getOperand(0) != CMTST)
-        continue;
-      if (CMTST.getOpcode() != AArch64ISD::CMTST)
-        continue;
-
-      return DAG.getNode(AArch64ISD::BSP, DL, VT, CMTST, A, B);
-    }
-
   return SDValue();
 }
 
@@ -29283,12 +29261,12 @@ static SDValue performSETCCCombine(SDNode *N,
       SplatLHSVal.isOne())
     return DAG.getSetCC(DL, VT, DAG.getConstant(0, DL, CmpVT), RHS, ISD::SETGE);
 
-  // Fold setcc(and(X, Y), 0, seteq) --> NOT(AArch64ISD::CMTST(X, Y))
-  // after DAG legalization. SETNE will have been legalized to SETEQ by now.
+  // Fold setcc(and(X, Y), 0, seteq) --> NOT(AArch64ISD::CMTST(X, Y)).
+  // SETNE will have been legalized to SETEQ by this point.
   // The NOT folds away when the result feeds a BSP.
   if (DCI.isAfterLegalizeDAG() && CmpVT.isFixedLengthVector() &&
       Cond == ISD::SETEQ && LHS.getOpcode() == ISD::AND &&
-      ISD::isConstantSplatVectorAllZeros(RHS.getNode())) {
+      isZerosVector(RHS.getNode())) {
     SDValue CMTSTNode = DAG.getNode(AArch64ISD::CMTST, DL, CmpVT,
                                     LHS.getOperand(0), LHS.getOperand(1));
     return DAG.getNOT(DL, CMTSTNode, CmpVT);
