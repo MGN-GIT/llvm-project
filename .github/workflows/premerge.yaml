@@ -17,6 +17,7 @@ on:
   push:
     branches:
       - 'release/**'
+      - testing-ci
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -25,9 +26,6 @@ concurrency:
 jobs:
   premerge-checks-linux:
     name: Build and Test Linux${{ (startsWith(matrix.runs-on, 'depot-ubuntu-24.04-arm') && ' AArch64') || '' }}
-    if: >-
-        github.repository_owner == 'llvm' &&
-        (github.event_name != 'pull_request' || github.event.action != 'closed')
     strategy:
       fail-fast: false
       matrix:
@@ -130,9 +128,6 @@ jobs:
 
   premerge-checks-windows:
     name: Build and Test Windows
-    if: >-
-        github.repository_owner == 'llvm' &&
-        (github.event_name != 'pull_request' || github.event.action != 'closed')
     runs-on: llvm-premerge-windows-2022-runners
     defaults:
       run:
@@ -272,10 +267,6 @@ jobs:
     runs-on: [self-hosted, macOS, ARM64, apple-runners]
     # Skip the self-hosted runner entirely if there is nothing to build,
     # rather than tying up a runner slot for a no-op run.
-    if: >-
-        github.repository_owner == 'llvm' &&
-        (github.event_name != 'pull_request' || github.event.action != 'closed') &&
-        needs.premerge-compute-macos.outputs.macos-projects != ''
     steps:
       - name: Checkout LLVM
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
