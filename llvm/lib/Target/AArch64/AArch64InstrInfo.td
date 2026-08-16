@@ -984,9 +984,6 @@ def AArch64cmlez : PatFrag<(ops node:$lhs),
 def AArch64cmltz : PatFrag<(ops node:$lhs),
                            (setcc immAllZerosV, node:$lhs, SETGT)>;
 
-def AArch64cmtst : PatFrag<(ops node:$LHS, node:$RHS),
-                           (vnot (AArch64cmeqz (and node:$LHS, node:$RHS)))>;
-
 def AArch64fcmeqz : PatFrag<(ops node:$lhs),
                             (AArch64fcmeq node:$lhs, immAllZerosV)>;
 
